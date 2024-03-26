@@ -34,92 +34,50 @@ def find_significant_dips(data, threshold, min_length=200, min_separation=1000):
 
     return [(dip[0], dip[-1]) for dip in merged_dips]
 
-def plot_and_save_dips(data, significant_dips, dir_name, sigma):
+
+def plot_and_save_dips(data, base_sigma, dip_sigma, significant_areas, dir_name):
+    # Ensure the output directory exists
     if not os.path.exists(dir_name):
         os.makedirs(dir_name)
     
-    # Smooth the entire data for the overview plot
-    smoothed_data = gaussian_filter1d(data, sigma=sigma)
+    # Convert data points for Bokeh compatibility
+    x_range = np.arange(len(data))
     
-    # Plot all dips overview
+    # Smooth the entire dataset for the overview plot
+    smoothed_data = gaussian_filter1d(data, sigma=base_sigma)
+    
+    # Plot with all dips overview
     output_file(os.path.join(dir_name, "all_dips.html"))
-    p = figure(title="All Identified Dips", x_axis_label='Index', y_axis_label='Amplitude')
-    p.line(range(len(data)), data, line_color="blue", alpha=0.5, legend_label="Original Data")
-    p.line(range(len(smoothed_data)), smoothed_data, line_color="red", alpha=0.8, legend_label="Smoothed Data")
-    for start, end in significant_dips:
+    p = figure(title="Signal with All Identified Dips", x_axis_label='Index', y_axis_label='Amplitude')
+    p.line(x_range, data, legend_label="Original Data", line_color="blue", alpha=0.5)
+    p.line(x_range, smoothed_data, legend_label="Smoothed Data", line_color="red", alpha=0.8)
+    
+    for i, (start, end) in enumerate(significant_areas):
         p.add_layout(BoxAnnotation(left=start, right=end, fill_alpha=0.3, fill_color='orange'))
+        
+    
     save(p)
-
-    # Plot each significant dip with increased smoothing
-    for i, (start, end) in enumerate(significant_dips):
-        segment = data[max(start-1000,0):min(end+1000,len(data))]
-        smoothed_segment = gaussian_filter1d(segment, sigma=sigma*10)  # Increase smoothing for individual dip plots
+    
+    # Plot each dip separately with higher smoothing
+    for i, (start, end) in enumerate(significant_areas):
+        # Define segment with some context around the dip
+        segment_start = max(start - 1000, 0)
+        segment_end = min(end + 1000, len(data))
+        segment_data = data[segment_start:segment_end]
+        
+        # Apply higher smoothing to this segment
+        smoothed_segment = gaussian_filter1d(segment_data, sigma=dip_sigma)
+        
         output_file(os.path.join(dir_name, f"dip_{i}.html"))
         p = figure(title=f"Dip {i}", x_axis_label='Index', y_axis_label='Amplitude')
-        p.line(range(len(segment)), segment, line_color="blue", alpha=0.5, legend_label="Original Data")
-        p.line(range(len(smoothed_segment)), smoothed_segment, line_color="red", alpha=0.8, legend_label="Smoothed Data")
-        save(p)
+        x_range = np.arange(segment_start, segment_end) 
+        # Plot the segment before and after smoothing
+        p.line(x_range, segment_data, line_color="blue", alpha=0.5, legend_label="Original Data")
+        p.line(x_range, smoothed_segment, line_color="red", alpha=0.8, legend_label="Smoothed Data")
+        p.add_layout(BoxAnnotation(left=start, right=end, fill_alpha=0.3, fill_color='orange'))
         
-def plot_and_save_dips(data, smoothed_data, significant_areas, threshold, dir_name):
-    # Ensure the output directory exists
-    if not os.path.exists(dir_name):
-        os.makedirs(dir_name)
-    
-    # Convert data points for Bokeh compatibility
-    x_range = np.arange(len(data))  # Convert range to numpy array
-    
-    # Plot with all dips
-    output_file(f"{dir_name}/all_dips.html")
-    p = figure(title="Signal with All Identified Dips", x_axis_label='Index', y_axis_label='Amplitude')
-    p.line(x_range, data, legend_label="Original Data", line_color="blue", alpha=0.5)
-    p.line(x_range, smoothed_data, legend_label="Smoothed Data", line_color="red", alpha=0.8)
-    
-    for i, segment in enumerate(significant_areas):
-        start, end = segment[0], segment[-1]
-        p.add_layout(BoxAnnotation(left=start, right=end, fill_alpha=0.3, fill_color='orange'))
-    
-    save(p)
-    
-    # Plot each dip separately
-    for i, segment in enumerate(significant_areas):
-        start, end = max(segment[0] - 1000, 0), min(segment[-1] + 1000, len(data) - 1)
-        output_file(f"{dir_name}/dip_{i}.html")
-        p = figure(title=f"Dip {i}", x_axis_label='Index', y_axis_label='Amplitude')
-        p.line(np.arange(start, end), data[start:end], line_color="blue", alpha=0.5)
-        p.line(np.arange(start, end), smoothed_data[start:end], line_color="red", alpha=0.8)
-        p.add_layout(BoxAnnotation(left=segment[0], right=segment[-1], fill_alpha=0.3, fill_color='orange'))
         save(p)
-# Example usage
-def plot_and_save_dips(data, smoothed_data, significant_areas, threshold, dir_name):
-    # Ensure the output directory exists
-    if not os.path.exists(dir_name):
-        os.makedirs(dir_name)
-    
-    # Convert data points for Bokeh compatibility
-    x_range = np.arange(len(data))  # Convert range to numpy array
-    
-    # Plot with all dips
-    output_file(f"{dir_name}/all_dips.html")
-    p = figure(title="Signal with All Identified Dips", x_axis_label='Index', y_axis_label='Amplitude')
-    p.line(x_range, data, legend_label="Original Data", line_color="blue", alpha=0.5)
-    p.line(x_range, smoothed_data, legend_label="Smoothed Data", line_color="red", alpha=0.8)
-    
-    for i, segment in enumerate(significant_areas):
-        start, end = segment[0], segment[-1]
-        p.add_layout(BoxAnnotation(left=start, right=end, fill_alpha=0.3, fill_color='orange'))
-    
-    save(p)
-    
-    # Plot each dip separately
-    for i, segment in enumerate(significant_areas):
-        start, end = max(segment[0] - 1000, 0), min(segment[-1] + 1000, len(data) - 1)
-        output_file(f"{dir_name}/dip_{i}.html")
-        p = figure(title=f"Dip {i}", x_axis_label='Index', y_axis_label='Amplitude')
-        p.line(np.arange(start, end), data[start:end], line_color="blue", alpha=0.5)
-        p.line(np.arange(start, end), smoothed_data[start:end], line_color="red", alpha=0.8)
-        p.add_layout(BoxAnnotation(left=segment[0], right=segment[-1], fill_alpha=0.3, fill_color='orange'))
-        save(p)
- 
+
 def plot_and_save_individual_dips(data, significant_dips, dir_name, base_sigma, dip_sigma):
     # Ensure the output directory exists
     if not os.path.exists(dir_name):
@@ -145,6 +103,7 @@ def plot_and_save_individual_dips(data, significant_dips, dir_name, base_sigma, 
         # Plot using the explicitly defined x_range
         p.line(x_range, segment, line_color="blue", alpha=0.5, legend_label="Original Data")
         p.line(x_range, smoothed_segment, line_color="red", alpha=0.8, legend_label="Smoothed Data")
+        p.add_layout(BoxAnnotation(left=segment[0], right=segment[-1], fill_alpha=0.3, fill_color='orange'))
         
         save(p)
 
@@ -154,5 +113,8 @@ data_chunk = np.load(data_chunk_path)
 smoothed_data_full = gaussian_filter1d(data_chunk, sigma=20)  # Initial smoothing
 significant_dips = find_significant_dips(smoothed_data_full, threshold=600, min_length=200, min_separation=1000)
 # plot_and_save_dips(data_chunk, significant_dips, "plots/dips_plots_07_chunk", sigma=20)
-plot_and_save_dips(data_chunk, smoothed_data_full, significant_dips, threshold=400, dir_name='plots/dips_plots_07_overview_chunks')
-plot_and_save_individual_dips(data_chunk, significant_dips, "plots/dips_plots_07_individual", base_sigma=20, dip_sigma=200)
+# plot_and_save_dips(data_chunk, smoothed_data_full, significant_dips, threshold=400, dir_name='plots/dips_plots_07_overview_chunks')
+plot_and_save_individual_dips(data_chunk, significant_dips, "plots/dips_plots_07_individual", base_sigma=20, dip_sigma=20)
+base_sigma=20
+dip_sigma=200
+plot_and_save_dips(data_chunk, base_sigma, dip_sigma, significant_dips, "plots/dips_plots_enhanced_smoothing")
