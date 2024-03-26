@@ -59,11 +59,11 @@ def save_dips_as_npy(data, significant_dips, dir_name, sampling_rate, context=10
         segment_data = data[segment_start:segment_end]
         
         # Convert indices to time (in seconds)
-        start_time = start / sampling_rate
-        end_time = end / sampling_rate
+        start_time = start / sampling_rate + 16
+        end_time = end / sampling_rate + 16
         
         # Save the segment as a .npy file with start and end time in the filename
-        filename = f"dip_{i}_start_{start_time:.2f}s_end_{end_time:.2f}s.npy"
+        filename = f"dip_{i}_start_{start_time:.6f}s_end_{end_time:.6f}s.npy"
         np.save(os.path.join(dir_name, filename), segment_data)
 
 def plot_and_save_dips(data, base_sigma, dip_sigma, significant_areas, dir_name):
@@ -102,8 +102,12 @@ def plot_and_save_dips(data, base_sigma, dip_sigma, significant_areas, dir_name)
         
         # Apply higher smoothing to this segment
         smoothed_segment = gaussian_filter1d(segment_data, sigma=dip_sigma)
-        
-        output_file(os.path.join(dir_name, f"dip_{i}.html"))
+        # Convert indices to time (in seconds)
+        start_time = start / sampling_rate + 16
+        end_time = end / sampling_rate + 16
+        filename = f"dip_{i}_start_{start_time:.6f}s_end_{end_time:.6f}s.html"
+         
+        output_file(os.path.join(dir_name, filename))
         p = figure(title=f"Dip {i}", x_axis_label='Index', y_axis_label='Amplitude')
         x_range = np.arange(segment_start, segment_end) 
         # Plot the segment before and after smoothing
