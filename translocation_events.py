@@ -8,6 +8,21 @@ import glob
 import pyabf 
 
 def find_significant_dips(data, threshold, min_length=200, min_separation=1000):
+    """
+    Identifies significant dips in the provided dataset based on a threshold. A dip is considered
+    significant if it falls below the threshold and meets the minimum length criteria. Adjacent
+    dips separated by less than the minimum separation are merged.
+
+    Parameters:
+    - data: Array-like, the dataset in which to find dips.
+    - threshold: Numeric, the threshold value below which a dip is considered significant.
+    - min_length: Integer, the minimum number of consecutive data points required for a dip to be considered significant.
+    - min_separation: Integer, the minimum number of data points that must separate two dips for them to be considered distinct.
+
+    Returns:
+    - List of tuples, where each tuple contains the start and end indices of a significant dip in the dataset.
+    """
+    
     under_threshold_indices = np.where(data < threshold)[0]
     if len(under_threshold_indices) == 0:
         return []

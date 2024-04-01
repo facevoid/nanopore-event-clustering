@@ -121,7 +121,7 @@ def plot_and_save_dips(data, base_sigma, dip_sigma, significant_areas, dir_name)
 if __name__ == '__main__':
         start_time = 16 
         total_significant_dip = 0
-        chunk_files = glob.glob('processed_data/chunk_data/*.npy') #16-46s [t=30s, each chunk has 5 seconds]
+        chunk_files = glob.glob('processed_data/chunk_data_23/*.npy') #16-46s [t=30s, each chunk has 5 seconds]
         for chunk_id, chunk_file in enumerate(chunk_files):
              
         #     data_chunk_path = 'processed_data/chunk_data/chunk_0.npy'
@@ -135,8 +135,8 @@ if __name__ == '__main__':
             base_sigma=20
             dip_sigma=300
             sampling_rate = 250000
-            plot_and_save_dips(data_chunk, base_sigma, dip_sigma, significant_dips, f"plots/dips_plots_07_16s_46s/{start_time}s-{end_time}s")
-            save_dips_as_npy(data_chunk, significant_dips, f"dips/dips_07_16s_46s/{start_time}s-{end_time}s", sampling_rate= sampling_rate,context=1000)
+            plot_and_save_dips(data_chunk, base_sigma, dip_sigma, significant_dips, f"plots/dips_plots_23_00s_30s/{start_time}s-{end_time}s")
+            save_dips_as_npy(data_chunk, significant_dips, f"dips/dips_23_00s_30s/{start_time}s-{end_time}s", sampling_rate= sampling_rate,context=1000)
             print(len(significant_dips))
             total_significant_dip += len(significant_dips)
             start_time = end_time

@@ -19,36 +19,15 @@ import os
 import matplotlib.pyplot as plt
 from scipy.stats import skew, kurtosis
 from scipy.fft import rfft
+import numpy as np
+import glob
+from scipy.stats import skew, kurtosis
+from scipy.fft import rfft
+from scipy.signal import find_peaks, peak_widths
+from features_analysis import load_dips_and_extract_all_features, select_features
 
 
-def load_dips_and_extract_features(directory):
-    features = []
-    filenames = glob.glob(os.path.join(directory, '*.npy'))
 
-    for filename in filenames:
-        dip = np.load(filename)
-        depth = np.min(dip)
-        width = len(dip)
-        area = np.trapz(-dip)  # Assuming dip values are negative
-        std_dev = np.std(dip)
-        skewness = skew(dip)
-        kurt = kurtosis(dip)
-
-        # Simple slope features - difference between consecutive points
-        slope_start = dip[1] - dip[0]
-        slope_end = dip[-1] - dip[-2]
-
-        # Fourier descriptors - using only the first few as features
-        fft_coeffs = rfft(dip)
-        fft_feature = np.abs(fft_coeffs[1])  # Just as an example, using the second coeff
-        
-        features.append([depth, width, area, std_dev, skewness, kurt, slope_start, slope_end, fft_feature])
-    
-    return np.array(features), filenames
-
-
-    
-    
 def plot_dips_by_cluster(clusters, dir_name, dip_sigma, sampling_rate):
     if not os.path.exists(dir_name):
         os.makedirs(dir_name)
@@ -90,7 +69,8 @@ def plot_dips_by_cluster_matplotlib(clusters, dir_name, dip_sigma, sampling_rate
         os.makedirs(dir_name)
 
     for label, filenames in clusters.items():
-        cluster_dir = os.path.join(dir_name, f"cluster_{label}")
+        # cluster_dir = os.path.join(dir_name, f"cluster_{label}")
+        cluster_dir = os.path.join(dir_name, f"")
         if not os.path.exists(cluster_dir):
             os.makedirs(cluster_dir)
 
@@ -137,11 +117,11 @@ def plot_dips_by_cluster_matplotlib(clusters, dir_name, dip_sigma, sampling_rate
                 axs[i // ncols, i % ncols].set_visible(True)  # Only show those with data
 
             plt.tight_layout(rect=[0, 0.03, 1, 0.95])  # Adjust the rect so the title fits
-            plt.savefig(os.path.join(cluster_dir, f"all_dips_subplot_fig_{fig_idx + 1}.png"))
+            plt.savefig(os.path.join(cluster_dir, f"cluster_{label}_all_dips_subplot_fig_{fig_idx + 1}.png"))
             plt.close()
 
 # Function to plot hierarchical clustering dendrogram
-def plot_dendrogram(Z, labels, max_d=None):
+def plot_dendrogram(Z, labels, max_d=None, plot_dir=None):
     plt.figure(figsize=(10, 7))
     plt.title('Hierarchical Clustering Dendrogram')
     plt.xlabel('Sample index')
@@ -158,25 +138,36 @@ def plot_dendrogram(Z, labels, max_d=None):
     )
     if max_d:
         plt.axhline(y=max_d, c='k')
-    plt.savefig('plots/hr_cluster/dredogram.png')
+    plt.savefig(f'{plot_dir}.png')
 
+
+        
 # Main script
 if __name__ == '__main__':
-    directory = "dips/dips_07_16s_46s/*/"  # Update this to your correct directory path
-    features, filenames = load_dips_and_extract_features(directory)
-
+    dip_directory = "dips/dips_07_16s_46s/*/"  # Update this to your correct directory path
+    plot_dir_base = 'clustered_dips_plots_07_16s_46s' 
+    # features, filenames = load_dips_and_extract_features(directory)
+    dip_sigma = 10
+     
+    features, features_labels, filenames = load_dips_and_extract_all_features(dip_directory, smooth_sigma=dip_sigma) 
+    label_dict = {label:index for index, label in enumerate(features_labels)}
+    # selected_labels = ['Dwelling Time', 'Kurtosis']
+    selected_labels = features_labels
+    selected_features = select_features(features, label_dict, labels_to_select=selected_labels)
+    print(selected_features.shape)
+    
     # Normalize features
     scaler = StandardScaler()
-    features_normalized = scaler.fit_transform(features)
+    features_normalized = scaler.fit_transform(selected_features)
 
     # Perform hierarchical clustering
     Z = linkage(features_normalized, 'ward')
 
     # Plot dendrogram to help determine the number of clusters
-    plot_dendrogram(Z, labels=filenames)
+    plot_dendrogram(Z, labels=filenames, plot_dir=f'plots/dendrogram/{plot_dir_base}')
 
     # Optional: Automatically form flat clusters from the hierarchical clustering defined by the given linkage matrix
-    max_distance = 4  # Adjust this threshold to cut the dendrogram and form clusters
+    max_distance = 20.5# Adjust this threshold to cut the dendrogram and form clusters
     labels = fcluster(Z, max_distance, criterion='distance')
 
     # Organize filenames by cluster
@@ -189,8 +180,8 @@ if __name__ == '__main__':
         print(f"{filename} -> Cluster {label}")
     
     # Adjust these parameters as needed
-    dir_name = f"plots/clustered_dips_plots_07_16s_46s_{len(clusters)}"
-    dip_sigma = 5
+    dir_name = f"plots/{plot_dir_base}_{len(clusters)}"
+    
     sampling_rate = 250000  # Example sampling rate in Hz
     
     # Plot dips by cluster
