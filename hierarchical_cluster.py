@@ -25,7 +25,7 @@ from scipy.stats import skew, kurtosis
 from scipy.fft import rfft
 from scipy.signal import find_peaks, peak_widths
 from features_analysis import load_dips_and_extract_all_features, select_features
-
+from dip_signals_analysis import get_wavelet_then_savgol_signal as smoothing_function
 
 
 def plot_dips_by_cluster(clusters, dir_name, dip_sigma, sampling_rate):
@@ -64,7 +64,7 @@ def plot_dips_by_cluster(clusters, dir_name, dip_sigma, sampling_rate):
         plt.savefig(os.path.join(cluster_dir, "aggregated_cluster_dips.png"))
         plt.close()
         
-def plot_dips_by_cluster_matplotlib(clusters, dir_name, dip_sigma, sampling_rate):
+def plot_dips_by_cluster_matplotlib(clusters, dir_name, sampling_rate):
     if not os.path.exists(dir_name):
         os.makedirs(dir_name)
 
@@ -97,7 +97,8 @@ def plot_dips_by_cluster_matplotlib(clusters, dir_name, dip_sigma, sampling_rate
                 filename = filenames[file_idx]
                 # Load the dip data
                 dip_data = np.load(filename)
-                smoothed_dip = gaussian_filter1d(dip_data, sigma=dip_sigma)
+                # smoothed_dip = gaussian_filter1d(dip_data, sigma=dip_sigma)
+                smoothed_dip = smoothing_function(dip_data)
                 time_axis = np.arange(len(dip_data)) / sampling_rate
 
                 # Find the correct subplot
@@ -144,17 +145,19 @@ def plot_dendrogram(Z, labels, max_d=None, plot_dir=None):
         
 # Main script
 if __name__ == '__main__':
-    dip_directory = "dips/dips_07_16s_46s/*/"  # Update this to your correct directory path
-    plot_dir_base = 'clustered_dips_plots_07_16s_46s' 
+    dip_directory = "dips/dips_07_16s_46s_soft/*/"  # Update this to your correct directory path
+    plot_dir_base = 'clustered_dips_plots_07_16s_46s_soft' 
     # features, filenames = load_dips_and_extract_features(directory)
-    dip_sigma = 10
+    
      
-    features, features_labels, filenames = load_dips_and_extract_all_features(dip_directory, smooth_sigma=dip_sigma) 
+    features, features_labels, filenames = load_dips_and_extract_all_features(dip_directory, smoothing_function=smoothing_function) 
     label_dict = {label:index for index, label in enumerate(features_labels)}
-    # selected_labels = ['Dwelling Time', 'Kurtosis']
-    selected_labels = features_labels
+    selected_labels = ['Dwelling Time', 'Kurtosis']
+    # selected_labels = features_labels
     selected_features = select_features(features, label_dict, labels_to_select=selected_labels)
     print(selected_features.shape)
+    print(selected_features[:,0])
+    print(max(selected_features[:,0]))
     
     # Normalize features
     scaler = StandardScaler()
@@ -167,7 +170,7 @@ if __name__ == '__main__':
     plot_dendrogram(Z, labels=filenames, plot_dir=f'plots/dendrogram/{plot_dir_base}')
 
     # Optional: Automatically form flat clusters from the hierarchical clustering defined by the given linkage matrix
-    max_distance = 20.5# Adjust this threshold to cut the dendrogram and form clusters
+    max_distance = 3.5# Adjust this threshold to cut the dendrogram and form clusters
     labels = fcluster(Z, max_distance, criterion='distance')
 
     # Organize filenames by cluster
@@ -185,7 +188,7 @@ if __name__ == '__main__':
     sampling_rate = 250000  # Example sampling rate in Hz
     
     # Plot dips by cluster
-    plot_dips_by_cluster_matplotlib(clusters, dir_name, dip_sigma, sampling_rate)
+    plot_dips_by_cluster_matplotlib(clusters, dir_name, sampling_rate)
 
     # Here you can follow up with plotting or processing specific to clusters
     # For instance, you could plot dips by cluster as in the earlier example

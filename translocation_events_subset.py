@@ -36,7 +36,7 @@ def find_significant_dips(data, threshold, min_length=200, min_separation=1000):
 
     return [(dip[0], dip[-1]) for dip in merged_dips]
 
-def save_dips_as_npy(data, significant_dips, dir_name, sampling_rate, context=1000):
+def save_dips_as_npy(data, significant_dips, dir_name, sampling_rate, chunk_start_time, dip_counter, context=1000):
     """
     Saves segments of the data corresponding to significant dips as .npy files, including the start and end time in the filename.
 
@@ -59,14 +59,14 @@ def save_dips_as_npy(data, significant_dips, dir_name, sampling_rate, context=10
         segment_data = data[segment_start:segment_end]
         
         # Convert indices to time (in seconds)
-        start_time = start / sampling_rate + 16
-        end_time = end / sampling_rate + 16
+        start_time = start / sampling_rate + chunk_start_time
+        end_time = end / sampling_rate + chunk_start_time
         
         # Save the segment as a .npy file with start and end time in the filename
-        filename = f"dip_{i}_start_{start_time:.6f}s_end_{end_time:.6f}s.npy"
+        filename = f"dip_{i+dip_counter}_start_{start_time:.6f}s_end_{end_time:.6f}s.npy"
         np.save(os.path.join(dir_name, filename), segment_data)
 
-def plot_and_save_dips(data, base_sigma, dip_sigma, significant_areas, dir_name):
+def plot_and_save_dips(data, base_sigma, dip_sigma, significant_areas, dir_name, chunk_start_time, dip_counter):
     # Ensure the output directory exists
     if not os.path.exists(dir_name):
         os.makedirs(dir_name)
@@ -103,12 +103,12 @@ def plot_and_save_dips(data, base_sigma, dip_sigma, significant_areas, dir_name)
         # Apply higher smoothing to this segment
         smoothed_segment = gaussian_filter1d(segment_data, sigma=dip_sigma)
         # Convert indices to time (in seconds)
-        start_time = start / sampling_rate + 16
-        end_time = end / sampling_rate + 16
-        filename = f"dip_{i}_start_{start_time:.6f}s_end_{end_time:.6f}s.html"
+        start_time = start / sampling_rate + chunk_start_time
+        end_time = end / sampling_rate + chunk_start_time
+        filename = f"dip_{i+dip_counter}_start_{start_time:.6f}s_end_{end_time:.6f}s.html"
          
         output_file(os.path.join(dir_name, filename))
-        p = figure(title=f"Dip {i}", x_axis_label='Index', y_axis_label='Amplitude')
+        p = figure(title=f"Dip {i+dip_counter}", x_axis_label='Index', y_axis_label='Amplitude')
         x_range = np.arange(segment_start, segment_end) 
         # Plot the segment before and after smoothing
         p.line(x_range, segment_data, line_color="blue", alpha=0.5, legend_label="Original Data")
@@ -121,23 +121,28 @@ def plot_and_save_dips(data, base_sigma, dip_sigma, significant_areas, dir_name)
 if __name__ == '__main__':
         start_time = 16 
         total_significant_dip = 0
-        chunk_files = glob.glob('processed_data/chunk_data_23/*.npy') #16-46s [t=30s, each chunk has 5 seconds]
+        plot_dir = 'plots/dips_plots_07_16s_46s_soft/'
+        save_dip_dir = 'dips/dips_07_16s_46s_soft/'
+        chunk_files = glob.glob('DATA/raw_chunk_data/chunk_data_07/*.npy') #16-46s [t=30s, each chunk has 5 seconds]
+        dip_counter = 0
         for chunk_id, chunk_file in enumerate(chunk_files):
              
         #     data_chunk_path = 'processed_data/chunk_data/chunk_0.npy'
             end_time = start_time + 5 #Each chunk has 5 seconds of data
             
+            base_sigma=35
             data_chunk = np.load(chunk_file)
-            smoothed_data_full = gaussian_filter1d(data_chunk, sigma=40)  # Initial smoothing
-            significant_dips = find_significant_dips(smoothed_data_full, threshold=700, min_length=45, min_separation=1000)
+            smoothed_data_full = gaussian_filter1d(data_chunk, sigma=base_sigma)  # Initial smoothing
+            significant_dips = find_significant_dips(smoothed_data_full, threshold=840, min_length=30, min_separation=400)
             # plot_and_save_dips(data_chunk, significant_dips, "plots/dips_plots_07_chunk", sigma=20)
             # plot_and_save_dips(data_chunk, smoothed_data_full, significant_dips, threshold=400, dir_name='plots/dips_plots_07_overview_chunks')
-            base_sigma=20
+            
             dip_sigma=300
             sampling_rate = 250000
-            plot_and_save_dips(data_chunk, base_sigma, dip_sigma, significant_dips, f"plots/dips_plots_23_00s_30s/{start_time}s-{end_time}s")
-            save_dips_as_npy(data_chunk, significant_dips, f"dips/dips_23_00s_30s/{start_time}s-{end_time}s", sampling_rate= sampling_rate,context=1000)
+            plot_and_save_dips(data_chunk, base_sigma, dip_sigma, significant_dips, f"{plot_dir}{start_time}s-{end_time}s",chunk_start_time=start_time, dip_counter=dip_counter)
+            save_dips_as_npy(data_chunk, significant_dips, f"{save_dip_dir}{start_time}s-{end_time}s", sampling_rate= sampling_rate,chunk_start_time=start_time,dip_counter=dip_counter, context=1000)
             print(len(significant_dips))
+            dip_counter += len(significant_dips)
             total_significant_dip += len(significant_dips)
             start_time = end_time
         print(f'Total significant dips {total_significant_dip}')
