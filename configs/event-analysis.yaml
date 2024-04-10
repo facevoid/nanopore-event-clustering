@@ -1,0 +1,41 @@
+# Version control
+version: 30  # Update this version as needed for your analysis runs
+
+# Configuration for Script 1 (Analysis Script)
+# ---------------------------------------------
+
+# Data file path (specific for each run or version)
+data_file_path: "DATA/raw_bin_data/2023_08_10_0007.abf"
+
+# Base sigma value for Gaussian smoothing
+base_sigma: 35
+
+# Time frame for analysis
+start_time: 0
+end_time: 300
+
+# Sampling rate for Bessel filter and other calculations
+sampling_rate: 250000
+
+# Paths and filenames (incorporate version number directly)
+save_dip_dir_prefix: "dips/dips_07_0s_300s_soft_v${version}"  # Base directory for loading and saving dip data
+plot_dir_prefix: "plots/dips_plots_07_0s_300s_soft_v${version}"  # Prefix for plot directories
+
+
+
+# Configuration for Script 2 (Feature Analysis Script)
+# ----------------------------------------------------
+
+# Directory for saving analysis plots (incorporate version number directly)
+signal_feature_analysis_dir: "plots/signal_feature_analysis_07_00s_300s_soft_v${version}"
+
+
+# Filtering parameters
+gaussian_sigma: [20, 30]  # Sigma values for Gaussian smoothing
+kernel_size: 37  # Kernel size for median filter
+window_length: 73  # Window length for Savitzky-Golay filter
+polyorder: 2  # Polynomial order for Savitzky-Golay filter
+cutoff_freq_hz: 10000  # Cutoff frequency for Bessel filter
+# Parameters for combination filters (adjust as needed)
+bessel_then_wavelet_sampling_rate: 250000  # Sampling rate for Bessel then Wavelet combination filter
+wavelet_then_savgol_mode: 'hard'  # Mode for Wavelet then Savitzky-Golay combination filter

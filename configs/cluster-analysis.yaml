@@ -1,0 +1,17 @@
+version: 26 
+# Paths and filenames (incorporate version number directly)
+dip_dir_prefix: "dips/dips_07_0s_300s_soft_v${version}"  # Base directory for loading the dip data
+
+feature_labels: ['Depth', 'Width', 'Area', 'Std Dev', 'Skewness', 'Kurtosis', 'Dwelling Time']
+
+#For K-means
+k: 5
+k_means_plot_dir: "plots/clustered_kMeans(k=${k})"
+
+#For hierarchical
+hr_plot_dir: "plots/clustered_hr"
+max_distance: 5
+# distance
+
+#optimal cluster
+optimal_cluster_size_plot_dir: 'plots/optimal_cluster_size' 
