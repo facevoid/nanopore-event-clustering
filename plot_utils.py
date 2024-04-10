@@ -322,3 +322,95 @@ def plot_distributions_with_subplots(data_chunk, significant_dips, plot_dir):
 
     # Save the figure with both subplots
     plt.savefig(f"{plot_dir}/distributions_with_subplots.png")
+    
+def plot_dips_by_cluster_matplotlib_v2(clusters, dir_name, sampling_rate, smoothing_function):
+    if not os.path.exists(dir_name):
+        os.makedirs(dir_name)
+
+    # Variables to hold the global min and max for amplitude and max time across all dips
+    global_min_amplitude = None
+    global_max_amplitude = None
+    global_max_time = 0  # Initialize the global max time duration
+
+    # First pass: find the global min and max amplitude and max time to use consistent y-axis and x-axis for all subplots
+    for filenames in clusters.values():
+        for filename in filenames:
+            dip_data = np.load(filename)
+            
+            # Calculate the quartiles and the IQR
+            Q1 = np.percentile(dip_data, 25)
+            Q3 = np.percentile(dip_data, 75)
+            IQR = Q3 - Q1
+            
+            # Define bounds to identify outliers
+            lower_bound = Q1 - 1.5 * IQR
+            upper_bound = Q3 + 1.5 * IQR
+            
+            # Filter the data to exclude outliers
+            filtered_data = dip_data[(dip_data >= lower_bound) & (dip_data <= upper_bound)]
+            
+            # Update global min and max with filtered data
+            if filtered_data.size > 0:
+                min_amplitude = np.min(filtered_data)
+                max_amplitude = np.max(filtered_data)
+                
+                # Update global_min_amplitude and global_max_amplitude
+                if global_min_amplitude is None or global_max_amplitude is None:
+                    global_min_amplitude = min_amplitude
+                    global_max_amplitude = max_amplitude
+                else:
+                    global_min_amplitude = min(global_min_amplitude, min_amplitude)
+                    global_max_amplitude = max(global_max_amplitude, max_amplitude)
+            
+            # Update global_max_time
+            dip_duration = len(dip_data) / sampling_rate
+            if dip_duration > global_max_time:
+                global_max_time = dip_duration
+
+    # Second pass: create plots with consistent y-axis and x-axis
+    for label, filenames in clusters.items():
+        cluster_dir = os.path.join(dir_name, str(label))  # Modified to include label in path
+        if not os.path.exists(cluster_dir):
+            os.makedirs(cluster_dir)
+
+        max_subplots_per_fig = 18  # Adjust this number based on your needs
+        total_files = len(filenames)
+        figures_needed = np.ceil(total_files / max_subplots_per_fig).astype(int)
+
+        for fig_idx in range(figures_needed):
+            remaining_files = total_files - fig_idx * max_subplots_per_fig
+            subplots_in_this_fig = min(max_subplots_per_fig, remaining_files)
+            
+            ncols = 2  # Two images per row
+            nrows = int(np.ceil(subplots_in_this_fig / ncols))
+
+            fig, axs = plt.subplots(nrows, ncols, figsize=(15, 15), squeeze=False)
+            fig.suptitle(f'Cluster {label} Dips, Fig {fig_idx + 1}', fontsize=16)
+
+            for i in range(subplots_in_this_fig):
+                file_idx = fig_idx * max_subplots_per_fig + i
+                filename = filenames[file_idx]
+                dip_data = np.load(filename)[700:-700]  # Assuming data cropping is desired
+                smoothed_dip = smoothing_function(dip_data) if smoothing_function is not None else dip_data
+                time_axis = np.arange(len(dip_data)) / sampling_rate
+
+                ax = axs[i // ncols, i % ncols]
+                ax.plot(time_axis, dip_data, alpha=0.5)
+                ax.plot(time_axis, smoothed_dip, alpha=0.8)
+                title = filename.split('/')[-1][:-4]
+                ax.set_title(title)
+                ax.set_xlabel('Time (s)')
+                ax.set_ylabel('Amplitude')
+
+                # Set consistent x and y axis limits across all plots
+                ax.set_xlim([0, global_max_time])
+                ax.set_ylim([global_min_amplitude, global_max_amplitude])
+
+            for ax in axs.flat:
+                ax.set_visible(False)
+            for i in range(subplots_in_this_fig):
+                axs[i // ncols, i % ncols].set_visible(True)
+
+            plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+            plt.savefig(os.path.join(cluster_dir, f"cluster_{label}_fig_{fig_idx + 1}.png"))
+            plt.close()
