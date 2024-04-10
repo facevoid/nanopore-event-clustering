@@ -2,10 +2,9 @@ import os
 import matplotlib.pyplot as plt 
 import numpy as np 
 from bokeh.plotting import figure, output_file, save
-from bokeh.io import export_png
 from bokeh.models import Span, BoxAnnotation
 from scipy.cluster.hierarchy import dendrogram
-from smoothness_analysis import calculate_smoothness, calculate_symmetry
+from smoothness_analysis import calculate_symmetry
 
 
             
