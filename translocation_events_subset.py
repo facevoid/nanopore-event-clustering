@@ -22,13 +22,13 @@ if __name__ == '__main__':
             base_sigma=35
             data_chunk = np.load(chunk_file)
             smoothed_data_full = SignalProcessor.gaussian_filter(data_chunk, sigma=base_sigma)  # Initial smoothing
-            significant_dips = find_significant_dips(smoothed_data_full, threshold=840, min_length=30, min_separation=400)
+            significant_dips = find_significant_dips(smoothed_data_full, threshold=830, min_length=50, min_separation=50)
             # plot_and_save_dips(data_chunk, significant_dips, "plots/dips_plots_07_chunk", sigma=20)
             # plot_and_save_dips(data_chunk, smoothed_data_full, significant_dips, threshold=400, dir_name='plots/dips_plots_07_overview_chunks')
             
-            dip_sigma=300
+            dip_sigma=50
             sampling_rate = 250000
-            plot_and_save_dips(data_chunk, base_sigma, dip_sigma, significant_dips, f"{plot_dir}{start_time}s-{end_time}s",chunk_start_time=start_time, dip_counter=dip_counter)
+            plot_and_save_dips(data_chunk, SignalProcessor.gaussian_filter , significant_dips, f"{plot_dir}{start_time}s-{end_time}s",chunk_start_time=start_time, dip_counter=dip_counter)
             save_dips_as_npy(data_chunk, significant_dips, f"{save_dip_dir}{start_time}s-{end_time}s", sampling_rate= sampling_rate,chunk_start_time=start_time,dip_counter=dip_counter, context=1000)
             print(len(significant_dips))
             dip_counter += len(significant_dips)

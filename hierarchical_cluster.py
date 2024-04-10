@@ -24,21 +24,23 @@ import glob
 from scipy.stats import skew, kurtosis
 from scipy.fft import rfft
 from scipy.signal import find_peaks, peak_widths
-from features_analysis import load_dips_and_extract_all_features, select_features
+from utils import load_dips_and_extract_all_features, select_features
 from plot_utils import plot_dendrogram, plot_dips_by_cluster_matplotlib
 from signal_processing import SignalProcessor
 
         
 # Main script
 if __name__ == '__main__':
-    dip_directory = "dips/dips_07_16s_46s_soft/*/"  # Update this to your correct directory path
-    plot_dir_base = 'clustered_dips_plots_07_16s_46s_soft' 
+    dip_directory = "dips/dips_07_0s_300s_soft_v4/*/"  # Update this to your correct directory path
+    plot_dir_base = 'clustered_dips_plots_07_00s_300s_soft_v4' 
     # features, filenames = load_dips_and_extract_features(directory)
     
      
     features, features_labels, filenames = load_dips_and_extract_all_features(dip_directory, smoothing_function=SignalProcessor.wavelet_then_savgol, remove_context=True) 
     label_dict = {label:index for index, label in enumerate(features_labels)}
-    # selected_labels = ['Dwelling Time', 'Kurtosis']
+    # features_labels = ['Depth', 'Width', 'Area', 'Std Dev', 'Skewness', 'Kurtosis',
+    #                        'Slope Start', 'Slope End', 'Dwelling Time', 'FFT Feature', 'Inflection Count',
+    #                        'Num Peaks', 'Peak Widths Mean']
     selected_labels = features_labels
     selected_features = select_features(features, label_dict, labels_to_select=selected_labels)
     print(selected_features.shape)
@@ -56,7 +58,7 @@ if __name__ == '__main__':
     plot_dendrogram(Z, labels=filenames, plot_dir=f'plots/dendrogram/{plot_dir_base}')
 
     # Optional: Automatically form flat clusters from the hierarchical clustering defined by the given linkage matrix
-    max_distance = 5.2# Adjust this threshold to cut the dendrogram and form clusters
+    max_distance = 20# Adjust this threshold to cut the dendrogram and form clusters
     labels = fcluster(Z, max_distance, criterion='distance')
 
     # Organize filenames by cluster
