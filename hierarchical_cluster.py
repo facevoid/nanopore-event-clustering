@@ -27,12 +27,16 @@ from scipy.signal import find_peaks, peak_widths
 from utils import load_dips_and_extract_all_features, select_features
 from plot_utils import plot_dendrogram, plot_dips_by_cluster_matplotlib
 from signal_processing import SignalProcessor
+from omegaconf import OmegaConf
 
+config = OmegaConf.load('configs/cluster-analysis.yaml')
         
 # Main script
 if __name__ == '__main__':
-    dip_directory = "dips/dips_07_0s_300s_soft_v4/*/"  # Update this to your correct directory path
-    plot_dir_base = 'clustered_dips_plots_07_00s_300s_soft_v4' 
+    
+    dip_directory =  f'{config.dip_dir_prefix}/*'
+    max_distance = config.max_distance  # Define the number of clusters
+    plot_dir_base = config.hr_plot_dir
     # features, filenames = load_dips_and_extract_features(directory)
     
      
@@ -55,10 +59,9 @@ if __name__ == '__main__':
     Z = linkage(features_normalized, 'ward')
 
     # Plot dendrogram to help determine the number of clusters
-    plot_dendrogram(Z, labels=filenames, plot_dir=f'plots/dendrogram/{plot_dir_base}')
+    plot_dendrogram(Z, labels=filenames, plot_dir=f'{plot_dir_base}/dendrogram/hr')
 
     # Optional: Automatically form flat clusters from the hierarchical clustering defined by the given linkage matrix
-    max_distance = 20# Adjust this threshold to cut the dendrogram and form clusters
     labels = fcluster(Z, max_distance, criterion='distance')
 
     # Organize filenames by cluster
@@ -71,7 +74,7 @@ if __name__ == '__main__':
         print(f"{filename} -> Cluster {label}")
     
     # Adjust these parameters as needed
-    dir_name = f"plots/{plot_dir_base}_{len(clusters)}"
+    dir_name = f"{plot_dir_base}_{len(clusters)}"
     
     sampling_rate = 250000  # Example sampling rate in Hz
     

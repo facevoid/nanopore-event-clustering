@@ -27,11 +27,14 @@ from scipy.signal import find_peaks, peak_widths
 from utils import load_dips_and_extract_all_features, select_features
 from plot_utils import plot_dendrogram, plot_dips_by_cluster_matplotlib
 from signal_processing import SignalProcessor
+from omegaconf import OmegaConf
 
+# Load configuration
+config = OmegaConf.load('configs/cluster-analysis.yaml')
 if __name__ == '__main__':
-    dip_directory = "dips/dips_07_0s_300s_soft_v26/*/"  # Update this to your correct directory path
-    n_clusters = 5  # Define the number of clusters
-    dir_name = f"plots/clustered_kMeans(k={n_clusters})"
+    dip_directory =  f'{config.dip_dir_prefix}/*'
+    n_clusters = config.k  # Define the number of clusters
+    dir_name = config.k_means_plot_dir
     features, features_labels, filenames = load_dips_and_extract_all_features(dip_directory, smoothing_function=SignalProcessor.wavelet_then_savgol, remove_context=True) 
 
     label_dict = {label:index for index, label in enumerate(features_labels)}
@@ -39,7 +42,8 @@ if __name__ == '__main__':
     #                        'Slope Start', 'Slope End', 'Dwelling Time', 'FFT Feature', 'Inflection Count',
     #                        'Num Peaks', 'Peak Widths Mean']
     # selected_labels = ['Depth', 'Width', 'Area', 'Std Dev', 'Skewness', 'Kurtosis','Dwelling Time','FFT Feature']
-    selected_labels = features_labels
+    selected_labels = config.feature_labels
+    print(selected_labels, dip_directory)
     selected_features = select_features(features, label_dict, labels_to_select=selected_labels)
     # Normalize features
     scaler = StandardScaler()
