@@ -39,8 +39,8 @@ config = OmegaConf.load('configs/event-analysis.yaml')
 
 if __name__ == '__main__':
     version = config.version
-    files = glob.glob(f'{config.save_dip_dir_prefix}_v{version}/*/*.npy')
-    dir_name = f'{config.signal_feature_analysis_dir}_v{version}'
+    files = glob.glob(f'{config.save_dip_dir_prefix}/*/*.npy')
+    dir_name = f'{config.signal_feature_analysis_dir}'
 
     for file_index, file_path in enumerate(files):
         file_id = os.path.basename(file_path)[:-4]  # Strip the extension
