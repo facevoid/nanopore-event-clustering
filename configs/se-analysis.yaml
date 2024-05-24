@@ -4,3 +4,9 @@ query_dip_path: 'dips/dips_07_0s_300s_soft/0s-300s/dip_204_start_206.698596s_end
 dip_db_dir: 'dips/dips_07_0s_300s_soft/0s-300s'
 plot_dir_name: 'plots/dtw_based_retrieval'
 similarity_threshold: 1500
+
+
+
+
+
+

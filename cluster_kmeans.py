@@ -67,4 +67,8 @@ if __name__ == '__main__':
     dip_sigma = 5
     sampling_rate = 250000  # Example sampling rate in Hz
     plot_dips_by_cluster_matplotlib(clusters, dir_name, sampling_rate, SignalProcessor.wavelet_then_savgol)
+    
+    for label in clusters.keys():
+        print(label, len(clusters[label]))
+        print(label, len(clusters[label])/ 370)
 

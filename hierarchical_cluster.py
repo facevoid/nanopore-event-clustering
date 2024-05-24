@@ -6,24 +6,15 @@ from scipy.cluster.hierarchy import dendrogram, linkage
 from scipy.cluster.hierarchy import fcluster
 from sklearn.preprocessing import StandardScaler
 from collections import defaultdict
-import os
 import numpy as np
-import glob
 from sklearn.preprocessing import StandardScaler
-from sklearn.cluster import KMeans
-from scipy.ndimage import gaussian_filter1d
 from collections import defaultdict
-from bokeh.plotting import figure, output_file, save
-from bokeh.models import BoxAnnotation
 import os
 import matplotlib.pyplot as plt
 from scipy.stats import skew, kurtosis
 from scipy.fft import rfft
 import numpy as np
 import glob
-from scipy.stats import skew, kurtosis
-from scipy.fft import rfft
-from scipy.signal import find_peaks, peak_widths
 from utils import load_dips_and_extract_all_features, select_features
 from plot_utils import plot_dendrogram, plot_dips_by_cluster_matplotlib
 from signal_processing import SignalProcessor
@@ -45,6 +36,7 @@ if __name__ == '__main__':
     # features_labels = ['Depth', 'Width', 'Area', 'Std Dev', 'Skewness', 'Kurtosis',
     #                        'Slope Start', 'Slope End', 'Dwelling Time', 'FFT Feature', 'Inflection Count',
     #                        'Num Peaks', 'Peak Widths Mean']
+    features_labels = ['Dwelling Time']
     selected_labels = features_labels
     selected_features = select_features(features, label_dict, labels_to_select=selected_labels)
     print(selected_features.shape)

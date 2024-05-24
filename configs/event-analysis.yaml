@@ -1,12 +1,12 @@
 # Version control
-version: 30  # Update this version as needed for your analysis runs
+version: 7  # Update this version as needed for your analysis runs
 
 # Configuration for Script 1 (Analysis Script)
 # ---------------------------------------------
 
 # Data file path (specific for each run or version)
-data_file_path: "DATA/raw_bin_data/2023_08_10_0007.abf"
-
+data_file_path: "DATA/raw_bin_data/2023_08_10_0010.abf"
+file_id: 10
 # Base sigma value for Gaussian smoothing
 base_sigma: 35
 
@@ -18,8 +18,8 @@ end_time: 300
 sampling_rate: 250000
 
 # Paths and filenames (incorporate version number directly)
-save_dip_dir_prefix: "dips/dips_07_0s_300s_soft_v${version}"  # Base directory for loading and saving dip data
-plot_dir_prefix: "plots/dips_plots_07_0s_300s_soft_v${version}"  # Prefix for plot directories
+save_dip_dir_prefix: "dips/dips_${file_id}_${start_time}s_${end_time}s_v${version}"  # Base directory for loading and saving dip data
+plot_dir_prefix: "plots/dips_plots_${file_id}_${start_time}s_${end_time}s_v${version}"  # Prefix for plot directories
 
 
 
@@ -27,10 +27,11 @@ plot_dir_prefix: "plots/dips_plots_07_0s_300s_soft_v${version}"  # Prefix for pl
 # ----------------------------------------------------
 
 # Directory for saving analysis plots (incorporate version number directly)
-signal_feature_analysis_dir: "plots/signal_feature_analysis_07_00s_300s_soft_v${version}"
+signal_feature_analysis_dir: "plots/signal_feature_analysis_${file_id}_${start_time}s_${end_time}s_v${version}"
 
 
 # Filtering parameters
+threshold: null #if no value specified, mean will be used as mean
 gaussian_sigma: [20, 30]  # Sigma values for Gaussian smoothing
 kernel_size: 37  # Kernel size for median filter
 window_length: 73  # Window length for Savitzky-Golay filter
@@ -38,4 +39,4 @@ polyorder: 2  # Polynomial order for Savitzky-Golay filter
 cutoff_freq_hz: 10000  # Cutoff frequency for Bessel filter
 # Parameters for combination filters (adjust as needed)
 bessel_then_wavelet_sampling_rate: 250000  # Sampling rate for Bessel then Wavelet combination filter
-wavelet_then_savgol_mode: 'hard'  # Mode for Wavelet then Savitzky-Golay combination filter
+wavelet_then_savgol_mode: 'soft'  # Mode for Wavelet then Savitzky-Golay combination filter

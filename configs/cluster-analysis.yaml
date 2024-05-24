@@ -1,7 +1,12 @@
-version: 26 
+version: 1 
 # Paths and filenames (incorporate version number directly)
-dip_dir_prefix: "dips/dips_07_0s_300s_soft_v${version}"  # Base directory for loading the dip data
-
+start_time: 0
+end_time: 300
+file_id: 10
+# dip_dir_prefix: "dips/dips_${file_id}_${start_time}s_${end_time}s_v${version}"  # Base directory for loading the dip data
+# dip_dir_prefix: dips/dips_07_0s_300s_soft_v27
+dip_dir_prefix: dips/dips_08_0s_626s_v1
+# dip_dir_prefix: "dips/dips_7_8_9_10_v1"
 feature_labels: ['Depth', 'Width', 'Area', 'Std Dev', 'Skewness', 'Kurtosis', 'Dwelling Time']
 
 #For K-means

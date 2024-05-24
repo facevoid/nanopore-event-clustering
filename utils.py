@@ -5,6 +5,9 @@ from scipy.stats import skew, kurtosis
 from scipy.signal import find_peaks, peak_widths
 from scipy.fft import rfft
 import glob 
+from sklearn.cluster import DBSCAN
+from scipy.stats import mode
+
 
 import numpy as np
 
@@ -91,6 +94,7 @@ def find_significant_dips(data, threshold, min_length=200, min_separation=1000, 
         return []
 
     dips = []
+    rejected_dips = []
     current_dip = [under_threshold_indices[0]]
     rejection_reasons = {}  # To hold individual dip rejections
     rejection_counts = {}  # To count different reasons for rejection
@@ -111,80 +115,19 @@ def find_significant_dips(data, threshold, min_length=200, min_separation=1000, 
     if is_significant:
         dips.append(current_dip)
     else:
+        rejected_dips.append(current_dip)
         rejection_reasons[(current_dip[0], current_dip[-1])] = reason
         rejection_counts[reason] = rejection_counts.get(reason, 0) + 1  # Increment here as well
 
     merged_dips = merge_dips(dips, data, min_separation, max_length)
+    rejected_merged_dips = merge_dips(merged_dips, data, min_separation, max_length) 
 
     # Optionally print or return rejection_reasons and rejection_counts for analysis
     # print("Rejection Reasons:", rejection_reasons)
     print("Rejection Counts:", rejection_counts)
-    return [(dip[0], dip[-1]) for dip in merged_dips]
+    return [(dip[0], dip[-1]) for dip in merged_dips], [(dip[0], dip[-1]) for dip in rejected_merged_dips]
 
 
-# def find_significant_dips(data, threshold, outlier_threshold=50, min_length=200, min_separation=1000):
-#     """
-#     Identifies significant dips in the provided dataset based on a threshold. A dip is considered
-#     significant if it falls below the threshold, does not contain negative values, meets the
-#     minimum length criteria, does not exceed the maximum length criteria, and has no more than
-#     10% of its data points falling below 200. Adjacent dips separated by less than the minimum
-#     separation are merged.
-
-#     Parameters:
-#     - data: Array-like, the dataset in which to find dips.
-#     - threshold: Numeric, the threshold value below which a dip is considered significant.
-#     - outlier_threshold: Numeric, used for an unrelated filtering criterion and can be ignored for the task of filtering out negative dips.
-#     - min_length: Integer, the minimum number of consecutive data points required for a dip to be considered significant.
-#     - min_separation: Integer, the minimum number of data points that must separate two dips for them to be considered distinct.
-
-#     Returns:
-#     - List of tuples, where each tuple contains the start and end indices of a significant dip in the dataset.
-#     """
-    
-#     # Calculate maximum allowed dip length.
-#     max_length = 0.08 * 250000
-
-#     # Identify indices where data falls below threshold and is non-negative.
-#     under_threshold_indices = np.where((data < threshold) & (data >= 0))[0]
-
-#     if len(under_threshold_indices) == 0:
-#         return []
-
-#     dips = []
-#     current_dip = [under_threshold_indices[0]]
-
-#     for index in under_threshold_indices[1:]:
-#         if index - current_dip[-1] > 1:
-#             # Finish current dip and check for length and below 200 condition.
-#             if len(current_dip) >= min_length and (current_dip[-1] - current_dip[0]) < max_length:
-#                 if np.sum(data[current_dip] < 500) / len(current_dip) <= 0.40:
-#                     dips.append(current_dip)
-#             current_dip = [index]
-#         else:
-#             current_dip.append(index)
-    
-#     if len(current_dip) >= min_length and (current_dip[-1] - current_dip[0]) < max_length:
-#         if np.sum(data[current_dip] < 200) / len(current_dip) <= 0.10:
-#             dips.append(current_dip)
-
-#     merged_dips = []
-#     current_dip = dips[0]
-#     for next_dip in dips[1:]:
-#         if next_dip[0] - current_dip[-1] < min_separation:
-#             # Attempt to merge and check length and below 200 condition before adding.
-#             potential_merge = current_dip + next_dip
-#             if (next_dip[-1] - current_dip[0]) < max_length and np.sum(data[potential_merge] < 200) / len(potential_merge) <= 0.10:
-#                 current_dip.extend(next_dip)
-#             else:
-#                 merged_dips.append(current_dip)
-#                 current_dip = next_dip
-#         else:
-#             merged_dips.append(current_dip)
-#             current_dip = next_dip
-#     if (current_dip[-1] - current_dip[0]) < max_length and np.sum(data[current_dip] < 200) / len(current_dip) <= 0.10:
-#         merged_dips.append(current_dip)
-
-#     return [(dip[0], dip[-1]) for dip in merged_dips]
 
 def save_dips_as_npy(data, significant_dips, dir_name, sampling_rate, chunk_start_time, dip_counter, context=1000):
     """
@@ -215,6 +158,97 @@ def save_dips_as_npy(data, significant_dips, dir_name, sampling_rate, chunk_star
         filename = f"dip_{i+dip_counter}_start_{start_time:.6f}s_end_{end_time:.6f}s.npy"
         np.save(os.path.join(dir_name, filename), segment_data)
 
+# def calculate_num_levels(data, method='histogram', eps=0.05, min_samples=2):
+#     if method == 'histogram':
+#         hist, bin_edges = np.histogram(data, bins='auto')  # Consider adjusting 'bins' manually if needed
+#         peaks, _ = find_peaks(hist, height=np.max(hist)*0.1)  # Adjust height to ignore small peaks
+#         return len(peaks)
+#     elif method == 'dbscan':
+#         # Apply DBSCAN clustering
+#         ratio = 0.1  # 5% of the total data points
+#         min_samples = max(int(ratio * len(data)), 50)
+#         # Use DBSCAN to cluster data points and assume each cluster corresponds to a different level
+#         data = data.reshape(-1, 1)  # Reshape for clustering
+#         clustering = DBSCAN(eps=eps, min_samples=min_samples).fit(data)
+#         num_levels = len(set(clustering.labels_)) - (1 if -1 in clustering.labels_ else 0)  # Exclude noise points
+#         return num_levels
+
+def detect_current_levels(data, eps=300, min_samples=10):
+    # Reshape data for clustering (DBSCAN expects a 2D array)
+    data_reshaped = data.reshape(-1, 1)
+
+    # Determine the threshold for treating data points as noise
+    noise_threshold = 0.8 * np.max(data)
+    
+    # Initialize labels as None
+    labels = np.full(shape=data.shape[0], fill_value=-1, dtype=int)  # Pre-fill labels as noise
+    non_noise_indices = data < noise_threshold  # Identify indices where data is below the threshold
+
+    # Apply DBSCAN clustering only to non-noise data
+    if np.any(non_noise_indices):
+        db = DBSCAN(eps=eps, min_samples=min_samples).fit(data_reshaped[non_noise_indices])
+        labels[non_noise_indices] = db.labels_  # Only update labels for non-noise data
+
+    # Number of clusters in labels, ignoring noise if present
+    n_clusters_ = len(set(labels)) - (1 if -1 in labels else 0)
+
+    return n_clusters_, labels
+
+def calculate_cluster_metrics(data, labels):
+    """
+    Calculate the number of clusters and the maximum mean difference between clusters.
+
+    Parameters:
+    - data: np.array, the dataset that has been clustered.
+    - labels: np.array, the labels array returned from DBSCAN or any clustering algorithm.
+
+    Returns:
+    - n_clusters: int, the number of clusters identified (excluding noise).
+    - max_mean_diff: float, the maximum difference in means between any two clusters.
+    """
+    unique_labels = np.unique(labels)
+    cluster_means = []
+
+    # Exclude noise (label == -1) and calculate means for each cluster
+    for k in unique_labels:
+        if k != -1:  # Ignore noise
+            class_member_mask = (labels == k)
+            cluster_mean = np.mean(data[class_member_mask])
+            cluster_means.append(cluster_mean)
+
+    # Calculate the number of clusters (excluding noise)
+    n_clusters = len(cluster_means)
+    data_mean = np.mean(data)
+    data_min = np.min(data)
+    data_mode = mode(data).mode[0]
+    data_max = np.max(data)
+    # Calculate mean differences between clusters
+    if n_clusters > 1:
+        mean_differences = np.diff(sorted(cluster_means))
+        max_mean_diff = np.max(mean_differences)  # Get the maximum mean difference
+    else:
+        max_mean_diff = 0  # No mean difference if there's one or no cluster
+    print(data_mode, data_mean, data_min, data_max)
+    if n_clusters == 0:
+            pseudo_label = 'S'  # Stable
+    elif n_clusters == 1:
+        if data_min > 0.75 * data_max:
+            
+            pseudo_label = 'U'
+        else:
+            pseudo_label = 'U'  # Unstable
+    elif n_clusters == 2:
+        if max_mean_diff > 150:
+            pseudo_label = 'PU'
+        else:
+            pseudo_label = 'U'
+    else:
+        if max_mean_diff > 75:
+            pseudo_label = 'PU'  # Distinctly Unstable
+        else:
+            pseudo_label = 'U'
+
+    return n_clusters, max_mean_diff, pseudo_label
 
 def load_dip_and_extract_all_features(dip_file, smoothing_function, remove_context):
     
@@ -246,11 +280,18 @@ def load_dip_and_extract_all_features(dip_file, smoothing_function, remove_conte
     peaks, _ = find_peaks(-dip)  # Peaks assuming dip values are negative
     num_peaks = len(peaks)  # Number of peaks
     peak_widths_mean = np.mean(peak_widths(-dip, peaks)[0]) if num_peaks > 0 else 0  # Mean peak width
+    
+    # num_levels = calculate_num_levels(dip, method='dbscan', eps=0.05, min_samples=30)  # Adjust parameters as necessary
+    # num_levels = calculate_num_levels(dip[80:-80], method='dbscan', eps=75, min_samples=50)
+    
+    num_levels, labels = detect_current_levels(dip[79:-79], eps=6.5, min_samples=35)
+    n_clusters, max_mean_diff, psudo_label = calculate_cluster_metrics(dip[79:-79], labels)
+
 
     # Combine all features into a list for this dip
     dip_features = [depth, width, area, std_dev, skewness, kurt,
                     slope_start, slope_end, dwelling_time, fft_feature, inflection_count,
-                    num_peaks, peak_widths_mean]
+                    num_peaks, peak_widths_mean, num_levels, psudo_label]
     
     
     
@@ -279,7 +320,7 @@ def load_dips_and_extract_all_features(directory, smoothing_function=None, remov
         
     features_labels = ['Depth', 'Width', 'Area', 'Std Dev', 'Skewness', 'Kurtosis',
                            'Slope Start', 'Slope End', 'Dwelling Time', 'FFT Feature', 'Inflection Count',
-                           'Num Peaks', 'Peak Widths Mean']
+                           'Num Peaks', 'Peak Widths Mean', 'Num Levels', 'Psudo Label']
     return np.array(features), features_labels, filenames
 
 def select_features(features, label_dict, labels_to_select):
